@@ -1,4 +1,3 @@
---https://discord.gg/BAZsKAUrmQ
 repeat
     wait()
 until game:IsLoaded() and game.Players.LocalPlayer.Character:FindFirstChild("FULLY_LOADED_CHAR")
@@ -1111,7 +1110,7 @@ pcall(
 )
 
 local Script = {
-    Name = "Yun" --\\ This is used for notification.
+    Name = "Yun LEAKED BY ZELLIX" --\\ This is used for notification.
 }
 local Misc = {
   
@@ -1672,7 +1671,7 @@ game:GetService("RunService").Stepped:connect(
         if Misc.TrashTalk then
             wait(0.6)
             game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(
-                "YUN RUNS YOU",
+                "YUN LEAKED BY ZELLIX LMA00",
                 "All"
             )
             wait(5)
@@ -1941,7 +1940,7 @@ UserInputService.InputBegan:Connect(
     end
 )
 local watermark_module = loadstring(game:HttpGet("https://pastebin.com/raw/UawhBK1u"))()
-watermark_module.name = "Yun Rewrite"
+watermark_module.name = "Yun Rewrite LEAKED BY ZELLIX"
 watermark_module.accent = Color3.fromRGB(224, 125, 224)
 watermark_module.visible = false
 
@@ -1954,7 +1953,7 @@ if script_info.announcement ~= "" then
     game.StarterGui:SetCore(
         "SendNotification",
         {
-            Title = "Yun",
+            Title = "Yun LEAKED BY ZELLIX",
             Text = script_info.announcement
         }
     )
@@ -1968,7 +1967,7 @@ loadstring(
 -- \\ Library Launch
 local library = loadstring(game:HttpGet("https://pastebin.com/raw/L7Z56MwH"))()
 local actualLib = library:initLibrary()
-local lib = actualLib:Load({name = "Yun Rewrite", sizeX = 425, sizeY = 510, color = Color3.fromRGB(37, 15, 134)})
+local lib = actualLib:Load({name = "Yun Rewrite LEAKED BY ZELLIX", sizeX = 425, sizeY = 510, color = Color3.fromRGB(37, 15, 134)})
 -- \\ T510
 local Aiming = lib:Tab("Aiming")
 local Blatant = lib:Tab("Blatant")
@@ -5254,7 +5253,7 @@ Teleports:dropdown {
         end
     end
 }
-Info:Label("Script: Yun Rewrite")
+Info:Label("Script: Yun Rewrite LEAKED BY ZELLIX")
 Info:Label("Build: 2.2.1")
 Info:Button {
     Name = "Copy discord invite",
@@ -5327,7 +5326,7 @@ WTRMARK:Toggle {
 
 WTRMARK:Box {
     Name = "Watermark Name",
-    Default = "Yun Rewrite",
+    Default = "Yun Rewrite LEAKED BY ZELLIX",
     Placeholder = "name here",
     Type = "string",
     Flag = "WatermarkName",
