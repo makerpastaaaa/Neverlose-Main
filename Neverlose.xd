@@ -9,7 +9,7 @@ local repo = "https://raw.githubusercontent.com/f1nobe7650/Lynx/main/"
 local Color = loadstring(game:HttpGet(repo .."Color.lua"))();
 local Math = loadstring(game:HttpGet(repo .."Math.lua"))();
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Blissful4992/ESPs/main/3D%20Drawing%20Api.lua"))();
-local WatermarkLUA = loadstring(game:HttpGet("https://pastebin.com/raw/FhFwETdS"))();
+local WatermarkLUA = loadstring(game:HttpGet("https://pastebin.com/raw/KU9i0xgr"))();
 --
 local InputService, TeleportService, RunService, Workspace, Lighting, Players, HttpService, StarterGui, ReplicatedStorage, TweenService, VirtualUser, PathFindingService = game:GetService("UserInputService"), game:GetService("TeleportService"), game:GetService("RunService"), game:GetService("Workspace"), game:GetService("Lighting"), game:GetService("Players"), game:GetService("HttpService"), game:GetService("StarterGui"), game:GetService("ReplicatedStorage"), game:GetService("TweenService"), game:GetService("VirtualUser"), game:GetService("PathfindingService")
 local Mouse, Camera, LocalPlayer = Players.LocalPlayer:GetMouse(), Workspace.Camera, Players.LocalPlayer
