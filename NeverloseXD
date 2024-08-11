@@ -1,1 +1,1 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/ShxdoWare1337/ShxdoWareGui99/main/1",true))();
+game.Players.LocalPlayer:Kick("New script here https://neverlosev2.tilda.ws")
