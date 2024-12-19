@@ -35,6 +35,10 @@ local mouse = local_player:GetMouse()
 local http = game:GetService("HttpService")
 local rs = game:GetService("RunService")
 
+if game:GetService("CoreGui").unknown then
+    game:GetService("CoreGui").unknown:Destroy()
+end
+
 function library:set_draggable(gui)
     local UserInputService = game:GetService("UserInputService")
 
