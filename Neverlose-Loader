@@ -134,12 +134,12 @@ end
 
 -- mainfunction
 local function ShowLoadingScreen()
-    -- Предзагрузка изображения
+
     ContentProvider:PreloadAsync({ImageLabel})
     
     -- fadein
     FadeIn()
-    wait(1) -- Ждем завершения появления
+    wait(1)
     
     -- waitin text
     AnimateText()
