@@ -150,9 +150,9 @@ local function ShowLoadingScreen()
     -- fadeout
     FadeOut():Wait()
     ScreenGui:Destroy()
-    
-    -- loading main script
+
     loadstring(game:HttpGet("https://raw.githubusercontent.com/makerpastaaaa/Neverlose-Main/refs/heads/main/Neverlose-Main"))() -- shawg really tryin check source code :C
+
 end
 
 -- loading screen
