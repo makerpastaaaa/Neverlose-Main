@@ -155,5 +155,12 @@ local function ShowLoadingScreen()
 
 end
 
+local executor = identifyexecutor()
+
+if executor == "Solara" or executor == "Xeno" or executor == "Delta" or executor == "Luna" then
+    game:GetService("Players")["LocalPlayer"]:Kick("DOLBAEB NEVERLOSE SUPPORTED ONLY SWIFT GO DOWNLOAD IN https://getswift.gg/download")
+    return
+end
+
 -- loading screen
 ShowLoadingScreen()
