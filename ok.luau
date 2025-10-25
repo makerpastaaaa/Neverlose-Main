@@ -1,14 +1,3 @@
-[file name]: image.png
-[file content begin]
-18:38 34 -- AbsoluteContentSize is not a valid property name
-Btack Begin
-
-B Eeript 'ENNjtojoyxxtImbekBRIT', Line 1057 - function AddTab
-Script 'ENNjtojOyxxtImbekBRIT', Line 974
-Stack End
-
-[file content end]
-
 local InputService = game:GetService('UserInputService')
 local TextService = game:GetService('TextService')
 local CoreGui = game:GetService('CoreGui')
