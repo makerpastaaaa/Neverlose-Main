@@ -159,21 +159,21 @@ function Library:MakeDraggable(Instance, Cutoff)
 end
 
 function Library:AddHoverEffect(Instance, Properties, PropertiesDefault)
-    Library:OnHighlight(Instance, Instance, Properties, PropertiesDefault)
-end
-
-function Library:OnHighlight(HighlightInstance, Instance, Properties, PropertiesDefault)
-    HighlightInstance.MouseEnter:Connect(function()
+    Instance.MouseEnter:Connect(function()
         for Property, ColorIdx in next, Properties do
             Instance[Property] = Library[ColorIdx] or ColorIdx
         end
     end)
 
-    HighlightInstance.MouseLeave:Connect(function()
+    Instance.MouseLeave:Connect(function()
         for Property, ColorIdx in next, PropertiesDefault do
             Instance[Property] = Library[ColorIdx] or ColorIdx
         end
     end)
+end
+
+function Library:OnHighlight(HighlightInstance, Instance, Properties, PropertiesDefault)
+    Library:AddHoverEffect(HighlightInstance, Properties, PropertiesDefault)
 end
 
 function Library:AddToolTip(InfoStr, HoverInstance)
@@ -224,7 +224,191 @@ function Library:AddToolTip(InfoStr, HoverInstance)
     end)
 end
 
--- Enhanced toggle with smooth animations
+-- FIXED: Missing methods from original library
+function Library:MouseIsOverOpenedFrame()
+    for Frame in next, Library.OpenedFrames do
+        local AbsPos, AbsSize = Frame.AbsolutePosition, Frame.AbsoluteSize
+        if Mouse.X >= AbsPos.X and Mouse.X <= AbsPos.X + AbsSize.X
+            and Mouse.Y >= AbsPos.Y and Mouse.Y <= AbsPos.Y + AbsSize.Y then
+            return true
+        end
+    end
+    return false
+end
+
+function Library:GetTextBounds(Text, Font, Size, Resolution)
+    local Bounds = TextService:GetTextSize(Text, Size, Font, Resolution or Vector2.new(1920, 1080))
+    return Bounds.X, Bounds.Y
+end
+
+function Library:SafeCallback(Func, ...)
+    if not Func then return end
+    local Success, Result = pcall(Func, ...)
+    if not Success and Library.NotifyOnError then
+        Library:Notify(Result, 3)
+    end
+    return Success, Result
+end
+
+function Library:AddToRegistry(Instance, Properties, IsHud)
+    local Data = {
+        Instance = Instance,
+        Properties = Properties,
+        Idx = #Library.Registry + 1
+    }
+    table.insert(Library.Registry, Data)
+    Library.RegistryMap[Instance] = Data
+    if IsHud then
+        table.insert(Library.HudRegistry, Data)
+    end
+end
+
+function Library:RemoveFromRegistry(Instance)
+    local Data = Library.RegistryMap[Instance]
+    if Data then
+        for i = #Library.Registry, 1, -1 do
+            if Library.Registry[i] == Data then
+                table.remove(Library.Registry, i)
+            end
+        end
+        for i = #Library.HudRegistry, 1, -1 do
+            if Library.HudRegistry[i] == Data then
+                table.remove(Library.HudRegistry, i)
+            end
+        end
+        Library.RegistryMap[Instance] = nil
+    end
+end
+
+function Library:GiveSignal(Signal)
+    table.insert(Library.Signals, Signal)
+end
+
+function Library:UpdateColorsUsingRegistry()
+    for _, Object in next, Library.Registry do
+        for Property, ColorIdx in next, Object.Properties do
+            if type(ColorIdx) == 'string' then
+                Object.Instance[Property] = Library[ColorIdx]
+            elseif type(ColorIdx) == 'function' then
+                Object.Instance[Property] = ColorIdx()
+            end
+        end
+    end
+end
+
+function Library:MapValue(Value, MinA, MaxA, MinB, MaxB)
+    return (1 - ((Value - MinA) / (MaxA - MinA))) * MinB + ((Value - MinA) / (MaxA - MinA)) * MaxB
+end
+
+function Library:GetDarkerColor(Color)
+    local H, S, V = Color3.toHSV(Color)
+    return Color3.fromHSV(H, S, V / 1.5)
+end
+
+Library.AccentColorDark = Library:GetDarkerColor(Library.AccentColor)
+
+-- FIXED: Watermark implementation
+local WatermarkOuter = Library:Create('Frame', {
+    BackgroundColor3 = Library.MainColor,
+    BorderColor3 = Library.OutlineColor,
+    Position = UDim2.new(0, 10, 0, 10),
+    Size = UDim2.new(0, 200, 0, 30),
+    Visible = false,
+    ZIndex = 50,
+    Parent = ScreenGui
+})
+
+Library:AddCorner(WatermarkOuter)
+Library:AddShadow(WatermarkOuter)
+Library:MakeDraggable(WatermarkOuter)
+
+local WatermarkLabel = Library:CreateLabel({
+    Size = UDim2.new(1, -10, 1, 0),
+    Position = UDim2.new(0, 5, 0, 0),
+    Text = 'Watermark',
+    TextSize = 13,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 51,
+    Parent = WatermarkOuter
+})
+
+function Library:SetWatermarkVisibility(Bool)
+    WatermarkOuter.Visible = Bool
+end
+
+function Library:SetWatermark(Text)
+    local X, Y = Library:GetTextBounds(Text, Library.Font, 13)
+    WatermarkOuter.Size = UDim2.new(0, X + 20, 0, 30)
+    WatermarkLabel.Text = Text
+    Library:SetWatermarkVisibility(true)
+end
+
+-- FIXED: Notify implementation (keeping backward compatibility)
+function Library:Notify(Text, Time)
+    Time = Time or 5
+    
+    local Notification = Library:Create('Frame', {
+        BackgroundColor3 = Library.MainColor,
+        BorderColor3 = Library.OutlineColor,
+        Position = UDim2.new(0.5, -150, 0, 10),
+        Size = UDim2.new(0, 300, 0, 60),
+        ZIndex = 100,
+        Parent = ScreenGui
+    })
+    
+    Library:AddCorner(Notification, UDim.new(0, 8))
+    Library:AddShadow(Notification)
+
+    local TitleLabel = Library:CreateLabel({
+        Position = UDim2.fromOffset(12, 8),
+        Size = UDim2.new(1, -24, 0, 20),
+        Text = 'Notification',
+        TextSize = 14,
+        Font = Library.TitleFont,
+        TextColor3 = Library.AccentColor,
+        Parent = Notification
+    })
+
+    local MessageLabel = Library:CreateLabel({
+        Position = UDim2.fromOffset(12, 30),
+        Size = UDim2.new(1, -24, 1, -38),
+        Text = Text,
+        TextSize = 13,
+        TextWrapped = true,
+        Parent = Notification
+    })
+
+    local ProgressBar = Library:Create('Frame', {
+        BackgroundColor3 = Library.AccentColor,
+        Size = UDim2.new(1, 0, 0, 3),
+        Position = UDim2.new(0, 0, 1, -3),
+        Parent = Notification
+    })
+    
+    Library:AddCorner(ProgressBar, UDim.new(0, 0, 0, 0))
+
+    -- Progress bar animation
+    TweenService:Create(ProgressBar, TweenInfo.new(Time), {
+        Size = UDim2.new(0, 0, 0, 3)
+    }):Play()
+
+    task.spawn(function()
+        wait(Time)
+        TweenService:Create(Notification, TweenInfo.new(0.3), {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0, 0, 0, 60)
+        }):Play()
+        wait(0.3)
+        Notification:Destroy()
+    end)
+end
+
+-- Also add ShowNotification as alias for compatibility
+function Library:ShowNotification(Title, Message, Duration)
+    Library:Notify(Message, Duration)
+end
+
+-- Modern toggle with smooth animations
 function Library:CreateModernToggle(Info)
     local Toggle = {
         Value = Info.Default or false,
@@ -290,7 +474,7 @@ function Library:CreateModernToggle(Info)
     return Toggle
 end
 
--- Enhanced button with hover effects
+-- Modern button with hover effects
 function Library:CreateModernButton(Info)
     local Button = {
         Text = Info.Text,
@@ -344,233 +528,8 @@ function Library:CreateModernButton(Info)
     return Button
 end
 
--- Modern slider with smooth animations
-function Library:CreateModernSlider(Info)
-    local Slider = {
-        Value = Info.Default or Info.Min,
-        Min = Info.Min,
-        Max = Info.Max,
-        Rounding = Info.Rounding or 1,
-        Callback = Info.Callback or function() end
-    }
-
-    local SliderFrame = Library:Create('Frame', {
-        BackgroundColor3 = Library.BackgroundColor,
-        Size = UDim2.new(1, 0, 0, 60),
-        Parent = Info.Parent
-    })
-    
-    Library:AddCorner(SliderFrame)
-
-    local SliderLabel = Library:CreateLabel({
-        Position = UDim2.fromOffset(12, 8),
-        Size = UDim2.new(1, -24, 0, 20),
-        Text = Info.Text,
-        TextSize = 14,
-        Parent = SliderFrame
-    })
-
-    local SliderTrack = Library:Create('Frame', {
-        BackgroundColor3 = Library.MainColor,
-        BorderColor3 = Library.OutlineColor,
-        Position = UDim2.fromOffset(12, 35),
-        Size = UDim2.new(1, -24, 0, 6),
-        Parent = SliderFrame
-    })
-    
-    Library:AddCorner(SliderTrack, UDim.new(0, 3))
-
-    local SliderFill = Library:Create('Frame', {
-        BackgroundColor3 = Library.AccentColor,
-        Size = UDim2.new(0, 0, 1, 0),
-        Parent = SliderTrack
-    })
-    
-    Library:AddCorner(SliderFill, UDim.new(0, 3))
-
-    local SliderKnob = Library:Create('Frame', {
-        BackgroundColor3 = Library.White,
-        BorderColor3 = Library.OutlineColor,
-        Size = UDim2.new(0, 16, 0, 16),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0, 0, 0.5, 0),
-        Parent = SliderTrack
-    })
-    
-    Library:AddCorner(SliderKnob, UDim.new(0, 8))
-    Library:AddShadow(SliderKnob)
-
-    local ValueLabel = Library:CreateLabel({
-        Position = UDim2.new(1, -60, 0, 8),
-        Size = UDim2.new(0, 48, 0, 20),
-        Text = tostring(Slider.Value),
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Right,
-        Parent = SliderFrame
-    })
-
-    function Slider:SetValue(Value)
-        Value = math.clamp(Value, Slider.Min, Slider.Max)
-        Slider.Value = math.floor(Value / Slider.Rounding) * Slider.Rounding
-        
-        local Percent = (Slider.Value - Slider.Min) / (Slider.Max - Slider.Min)
-        local FillSize = Percent * (SliderTrack.AbsoluteSize.X - 2)
-        
-        TweenService:Create(SliderFill, TweenInfo.new(0.1), {Size = UDim2.new(0, FillSize, 1, 0)}):Play()
-        TweenService:Create(SliderKnob, TweenInfo.new(0.1), {Position = UDim2.new(Percent, 0, 0.5, 0)}):Play()
-        
-        ValueLabel.Text = tostring(Slider.Value)
-        Library:SafeCallback(Slider.Callback, Slider.Value)
-    end
-
-    local IsDragging = false
-    SliderTrack.InputBegan:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-            IsDragging = true
-            local Percent = (Mouse.X - SliderTrack.AbsolutePosition.X) / SliderTrack.AbsoluteSize.X
-            Slider:SetValue(Slider.Min + (Slider.Max - Slider.Min) * Percent)
-        end
-    end)
-
-    InputService.InputEnded:Connect(function(Input)
-        if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-            IsDragging = false
-        end
-    end)
-
-    InputService.InputChanged:Connect(function(Input)
-        if IsDragging and Input.UserInputType == Enum.UserInputType.MouseMovement then
-            local Percent = math.clamp((Mouse.X - SliderTrack.AbsolutePosition.X) / SliderTrack.AbsoluteSize.X, 0, 1)
-            Slider:SetValue(Slider.Min + (Slider.Max - Slider.Min) * Percent)
-        end
-    end)
-
-    Slider:SetValue(Slider.Value)
-    return Slider
-end
-
--- Modern dropdown
-function Library:CreateModernDropdown(Info)
-    local Dropdown = {
-        Values = Info.Values or {},
-        Value = Info.Default,
-        Callback = Info.Callback or function() end
-    }
-
-    local DropdownFrame = Library:Create('Frame', {
-        BackgroundColor3 = Library.BackgroundColor,
-        Size = UDim2.new(1, 0, 0, 40),
-        Parent = Info.Parent
-    })
-    
-    Library:AddCorner(DropdownFrame)
-
-    local DropdownButton = Library:Create('TextButton', {
-        BackgroundColor3 = Library.MainColor,
-        BorderColor3 = Library.OutlineColor,
-        Size = UDim2.new(1, -8, 0, 32),
-        Position = UDim2.new(0, 4, 0, 4),
-        Text = '',
-        AutoButtonColor = false,
-        Parent = DropdownFrame
-    })
-    
-    Library:AddCorner(DropdownButton)
-
-    local DropdownLabel = Library:CreateLabel({
-        Position = UDim2.fromOffset(12, 0),
-        Size = UDim2.new(1, -40, 1, 0),
-        Text = Dropdown.Value or 'Select...',
-        TextSize = 14,
-        Parent = DropdownButton
-    })
-
-    local DropdownArrow = Library:Create('ImageLabel', {
-        BackgroundTransparency = 1,
-        Position = UDim2.new(1, -24, 0.5, -8),
-        Size = UDim2.new(0, 16, 0, 16),
-        Image = 'rbxassetid://3926305904',
-        ImageColor3 = Library.FontColor,
-        ImageRectOffset = Vector2.new(564, 284),
-        ImageRectSize = Vector2.new(36, 36),
-        Parent = DropdownButton
-    })
-
-    local DropdownList = Library:Create('ScrollingFrame', {
-        BackgroundColor3 = Library.MainColor,
-        BorderColor3 = Library.OutlineColor,
-        Position = UDim2.new(0, 4, 1, 4),
-        Size = UDim2.new(1, -8, 0, 120),
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        ScrollBarThickness = 3,
-        ScrollBarImageColor3 = Library.AccentColor,
-        Visible = false,
-        Parent = DropdownFrame
-    })
-    
-    Library:AddCorner(DropdownList)
-    Library:AddShadow(DropdownList)
-
-    local ListLayout = Library:Create('UIListLayout', {
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Parent = DropdownList
-    })
-
-    function Dropdown:UpdateList()
-        for _, Child in ipairs(DropdownList:GetChildren()) do
-            if Child:IsA('TextButton') then
-                Child:Destroy()
-            end
-        end
-
-        for _, Value in ipairs(Dropdown.Values) do
-            local Option = Library:Create('TextButton', {
-                BackgroundColor3 = Library.MainColor,
-                BorderSizePixel = 0,
-                Size = UDim2.new(1, 0, 0, 30),
-                Text = '',
-                AutoButtonColor = false,
-                Parent = DropdownList
-            })
-
-            local OptionLabel = Library:CreateLabel({
-                Size = UDim2.new(1, -12, 1, 0),
-                Position = UDim2.fromOffset(12, 0),
-                Text = Value,
-                TextSize = 13,
-                Parent = Option
-            })
-
-            Option.MouseButton1Click:Connect(function()
-                Dropdown.Value = Value
-                DropdownLabel.Text = Value
-                DropdownList.Visible = false
-                TweenService:Create(DropdownArrow, TweenInfo.new(0.2), {Rotation = 0}):Play()
-                Library:SafeCallback(Dropdown.Callback, Value)
-            end)
-
-            Library:AddHoverEffect(Option, 
-                {BackgroundColor3 = 'BackgroundColor'},
-                {BackgroundColor3 = 'MainColor'}
-            )
-        end
-
-        DropdownList.CanvasSize = UDim2.new(0, 0, 0, #Dropdown.Values * 30)
-    end
-
-    DropdownButton.MouseButton1Click:Connect(function()
-        DropdownList.Visible = not DropdownList.Visible
-        TweenService:Create(DropdownArrow, TweenInfo.new(0.2), {
-            Rotation = DropdownList.Visible and 180 or 0
-        }):Play()
-    end)
-
-    Dropdown:UpdateList()
-    return Dropdown
-end
-
--- Enhanced window creation
-function Library:CreateModernWindow(Config)
+-- Modern window creation
+function Library:CreateWindow(Config)
     Config = Config or {}
     
     local Window = {
@@ -711,10 +670,6 @@ function Library:CreateModernWindow(Config)
                 return Library:CreateModernToggle(Info)
             elseif ElementType == 'Button' then
                 return Library:CreateModernButton(Info)
-            elseif ElementType == 'Slider' then
-                return Library:CreateModernSlider(Info)
-            elseif ElementType == 'Dropdown' then
-                return Library:CreateModernDropdown(Info)
             end
         end
 
@@ -747,102 +702,7 @@ function Library:CreateModernWindow(Config)
     return Window
 end
 
--- Enhanced notification system
-function Library:ShowNotification(Title, Message, Duration)
-    Duration = Duration or 5
-    
-    local Notification = Library:Create('Frame', {
-        BackgroundColor3 = Library.MainColor,
-        BorderColor3 = Library.OutlineColor,
-        Position = UDim2.new(1, 10, 0, 10),
-        Size = UDim2.new(0, 300, 0, 80),
-        ZIndex = 100,
-        Parent = ScreenGui
-    })
-    
-    Library:AddCorner(Notification, UDim.new(0, 8))
-    Library:AddShadow(Notification)
-
-    local TitleLabel = Library:CreateLabel({
-        Position = UDim2.fromOffset(12, 8),
-        Size = UDim2.new(1, -24, 0, 20),
-        Text = Title,
-        TextSize = 14,
-        Font = Library.TitleFont,
-        TextColor3 = Library.AccentColor,
-        Parent = Notification
-    })
-
-    local MessageLabel = Library:CreateLabel({
-        Position = UDim2.fromOffset(12, 30),
-        Size = UDim2.new(1, -24, 1, -38),
-        Text = Message,
-        TextSize = 13,
-        TextWrapped = true,
-        Parent = Notification
-    })
-
-    local ProgressBar = Library:Create('Frame', {
-        BackgroundColor3 = Library.AccentColor,
-        Size = UDim2.new(1, 0, 0, 3),
-        Position = UDim2.new(0, 0, 1, -3),
-        Parent = Notification
-    })
-    
-    Library:AddCorner(ProgressBar, UDim.new(0, 0, 0, 0))
-
-    -- Slide in animation
-    TweenService:Create(Notification, TweenInfo.new(0.3), {
-        Position = UDim2.new(1, -310, 0, 10)
-    }):Play()
-
-    -- Progress bar animation
-    TweenService:Create(ProgressBar, TweenInfo.new(Duration), {
-        Size = UDim2.new(0, 0, 0, 3)
-    }):Play()
-
-    task.spawn(function()
-        wait(Duration)
-        TweenService:Create(Notification, TweenInfo.new(0.3), {
-            Position = UDim2.new(1, 10, 0, 10)
-        }):Play()
-        wait(0.3)
-        Notification:Destroy()
-    end)
-end
-
--- Keep existing utility functions
-function Library:GetTextBounds(Text, Font, Size, Resolution)
-    local Bounds = TextService:GetTextSize(Text, Size, Font, Resolution or Vector2.new(1920, 1080))
-    return Bounds.X, Bounds.Y
-end
-
-function Library:SafeCallback(Func, ...)
-    if not Func then return end
-    local Success, Result = pcall(Func, ...)
-    if not Success and Library.NotifyOnError then
-        Library:ShowNotification('Error', Result, 3)
-    end
-end
-
-function Library:AddToRegistry(Instance, Properties, IsHud)
-    local Data = {
-        Instance = Instance,
-        Properties = Properties,
-        Idx = #Library.Registry + 1
-    }
-    table.insert(Library.Registry, Data)
-    Library.RegistryMap[Instance] = Data
-    if IsHud then
-        table.insert(Library.HudRegistry, Data)
-    end
-end
-
-function Library:GiveSignal(Signal)
-    table.insert(Library.Signals, Signal)
-end
-
--- Initialize
+-- Initialize keybinds
 Library:GiveSignal(InputService.InputBegan:Connect(function(Input)
     if Input.KeyCode == Enum.KeyCode.RightControl then
         -- Toggle UI visibility
@@ -851,6 +711,13 @@ Library:GiveSignal(InputService.InputBegan:Connect(function(Input)
                 Element.Visible = not Element.Visible
             end
         end
+    end
+end))
+
+-- Cleanup signal
+Library:GiveSignal(ScreenGui.DescendantRemoving:Connect(function(Instance)
+    if Library.RegistryMap[Instance] then
+        Library:RemoveFromRegistry(Instance)
     end
 end))
 
